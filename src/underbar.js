@@ -76,23 +76,14 @@ var _ = { };
 
   // Return all elements of an array that pass a truth test.
   _.filter = function(collection, test) {
-    var result;
 
-    if ( Array.isArray(collection) ) {
-      result = [];
-      for ( var i = 0; i < collection.length; i++ ) {
-        if ( test(collection[i]) ) {
-          result.push(collection[i]);
+    var result = [];
+   
+    _.each(collection, function(item, key, collection){
+        if (test(item, key, collection)) {
+            result.push(item);
         }
-      }
-    } else {
-      result = {};
-      for ( key in collection ) {
-        if ( test(collection[key]) ) {
-          result[key] = collection[key];
-        }
-      }
-    }
+    });
 
     return result;
   };
@@ -100,67 +91,23 @@ var _ = { };
   // Return all elements of an array that don't pass a truth test.
   _.reject = function(collection, test) {
     // TIP: see if you can re-use _.filter() here, without simply
-    // copying code in and modifying it
-
-    /* Using _.filter to complete the method.  Doesn't work.  Must be an easier way.
-
-    var result;
-    var remove = _.filter(collection, test);
-
-    if ( remove instanceof Array ) {
-      result = [];
-      for ( var i = 0; i < collection.length; i++ ) {
-        if ( remove.indexOf(collection[i] !== -1) ) {
-          result.push(collection[i]);
-        }
-      }
-    } else {
-      result = {};
-      for ( key in collection ){
-        if (remove[key] === undefined ) {
-          result[key] = collection[key];
-        }
-      }
-    }
-    */
-    
-
-    //Resuing code from _.filter to complete the method
-
-    var result;
-
-    if ( Array.isArray(collection) ) {
-      result = [];
-      for ( var i = 0; i < collection.length; i++ ) {
-        if ( !test(collection[i]) ) {
-          result.push(collection[i]);
-        }
-      }
-    } else {
-      result = {};
-      for ( key in collection ) {
-        if ( !test(collection[key]) ) {
-          result[key] = collection[key];
-        }
-      }
-    }
-
-
-    return result;
+     
+    return _.filter(collection, function(item) {
+        return !test(item);
+    });
 
   };
 
   // Produce a duplicate-free version of the array.
   _.uniq = function(array) {
 
-    var result = [];
+    var result = {};
 
-    for (var i = 0; i < array.length; i++) {
-      if (result.indexOf(array[i]) === -1 )
-        result.push(array[i]);
-    }
+    _.each(array, function(item){
+        result[item] = true;
+    })
 
-    return result;
+    return Object.keys(result);
   };
 
 
@@ -172,9 +119,9 @@ var _ = { };
 
     var result = [];
 
-    for ( var i = 0; i < array.length; i++ ) {
-      result.push(iterator(array[i]));
-    }
+    _.each(array, function(item){
+      result.push(iterator(item))
+    });
   
     return result;
   };
@@ -472,6 +419,21 @@ var _ = { };
   // of that string. For example, _.sortBy(people, 'name') should sort
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
+
+  var sortable = [];
+
+  if ( Array.isArray(collection) ) {
+    sortable = collection.sort(function(a,b) {return a.iterator - b.iterator; })
+  } else {
+    _.each(collection, function(item){
+      sortable.push(item.iterator)
+    })
+    sortable.sort(function(a,b) { return b - a } );
+  }
+
+  return sortable;
+
+
   };
 
   // Zip together two or more arrays with elements of the same index
@@ -480,6 +442,26 @@ var _ = { };
   // Example:
   // _.zip(['a','b','c','d'], [1,2,3]) returns [['a',1], ['b',2], ['c',3], ['d',undefined]]
   _.zip = function() {
+
+  //Not pretty, but it works
+
+    var args = Array.prototype.slice.call(arguments);
+    var sorted = args.slice();
+
+    sorted.sort( function (a,b) { return b.length - a.length; } );
+    
+    var result = [];
+    var temp;
+
+    for ( var i = 0; i < sorted[0].length; i++) {
+      temp = [];
+      _.each(args, function(list){
+        temp.push(list[i]);
+      })
+      result.push(temp);
+    }
+   
+    return result;
   };
 
   // Takes a multidimensional array and converts it to a one-dimensional array.
@@ -487,16 +469,43 @@ var _ = { };
   //
   // Hint: Use Array.isArray to check if something is an array
   _.flatten = function(nestedArray, result) {
+
+    var args = Array.prototype.slice.call(nestedArray);
+    var result = [];
+    _.each(args, function (item) { 
+      if (Array.isArray(item)) { 
+        _.flatten(item);
+      } else {
+        result.push(item);
+      }
+    })
+
+    return result;
   };
 
   // Takes an arbitrary number of arrays and produces an array that contains
   // every item shared between all the passed-in arrays.
   _.intersection = function() {
+
+    var array = Array.prototype.slice.call(arguments, 0, 1);
+    var args = Array.prototype.slice.call(arguments, 1);
+    var result = [];
+
+    return _.filter(_.uniq(array), function(item){
+      return _.every(args, function(other){
+        return _.contains(other, item);
+      })
+    })
+
   };
 
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
+
+    var others = Array.prototype.slice.call(arguments, 1);
+
+    return _.filter(array, function(item) { return !_.contains(others, item); } );
 
   };
 
