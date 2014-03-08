@@ -420,19 +420,24 @@ var _ = { };
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
 
+    //This is ugly and I don't really understand what I did.  It works though.
+
   var sortable = [];
 
   if ( Array.isArray(collection) ) {
-    sortable = collection.sort(function(a,b) {return a.iterator - b.iterator; })
+    if(typeof iterator === "string"){
+      sortable = collection.sort(function(a,b) { return a[iterator] - b[iterator];});
+    } else {
+      sortable = collection.sort(iterator).sort();
+    }
   } else {
     _.each(collection, function(item){
       sortable.push(item.iterator)
     })
-    sortable.sort(function(a,b) { return b - a } );
+    sortable.sort(function(a,b) {return a - b;});
   }
-
+  
   return sortable;
-
 
   };
 
@@ -471,10 +476,10 @@ var _ = { };
   _.flatten = function(nestedArray, result) {
 
     var args = Array.prototype.slice.call(nestedArray);
-    var result = [];
+    var result = result || [];
     _.each(args, function (item) { 
       if (Array.isArray(item)) { 
-        _.flatten(item);
+        _.flatten(item, result);
       } else {
         result.push(item);
       }
@@ -487,13 +492,13 @@ var _ = { };
   // every item shared between all the passed-in arrays.
   _.intersection = function() {
 
-    var array = Array.prototype.slice.call(arguments, 0, 1);
-    var args = Array.prototype.slice.call(arguments, 1);
-    var result = [];
+    var arrays = Array.prototype.slice.call(arguments);
+    var items = [];
+    items  = _.uniq(items.concat.apply(items, arrays));
 
-    return _.filter(_.uniq(array), function(item){
-      return _.every(args, function(other){
-        return _.contains(other, item);
+    return _.filter(items, function(value){
+      return _.every(arrays, function(list){
+        return _.contains(list,value)
       })
     })
 
@@ -503,9 +508,14 @@ var _ = { };
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
 
-    var others = Array.prototype.slice.call(arguments, 1);
 
-    return _.filter(array, function(item) { return !_.contains(others, item); } );
+    var others = Array.prototype.slice.call(arguments, 1);
+    var merged = [];
+    var merged = merged.concat.apply(merged, others);
+
+    return _.filter(array, function(elem){
+      return (!_.contains(merged, elem));
+    })
 
   };
 
@@ -519,7 +529,27 @@ var _ = { };
   // during a given window of time.
   //
   // See the Underbar readme for details.
+
+  //I feel like this should work. Hmmmm.
+
   _.throttle = function(func, wait) {
+
+    return function(){
+
+      var timeCalled;
+      var args = Array.prototype.slice.call(arguments,2);
+
+      if (timeCalled){
+        var now = new Date().getTime();
+        if ((now - timeCalled) > wait){
+          func.apply(this, args);
+          timeCalled = new Date().getTime();
+        }
+      } else {
+        func.apply(this, args);
+        timeCalled = new Date().getTime();
+      }  
+    }
   };
 
 }).call(this);
